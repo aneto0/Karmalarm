@@ -1,0 +1,16 @@
+[Unit]
+Description=Karmalarm Jivarm MARTe application
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=60
+User=root
+Environment="TARGET=armv8-linux"
+Environment="MARTe2_DIR=/opt/MARTe2-dev"
+Environment="MARTe2_Components_DIR=/opt/MARTe2-components/"
+ExecStart=/opt/Karmalarm/Jivarm/Startup/Main.sh -f ../Configurations/Startup_Gen.cfg -m StateMachine:START
+[Install]
+WantedBy=multi-user.target

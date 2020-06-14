@@ -1,0 +1,14 @@
+[Unit]
+Description=Karmalarm broker service
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=root
+ExecStart=/usr/bin/env python3 /opt/Karmalarm/Jivarm/Python/alarmbroker.py -bp 8888 -eu EMAIL -ep EMAILPASS -ed DESTEMAIL -tt BOTTOKEN -ta BOTADMIN
+
+[Install]
+WantedBy=multi-user.target
