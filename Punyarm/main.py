@@ -64,10 +64,10 @@ class MainApp(object):
             ok = False
         return ok
 
-    def connectToWifi(self):
+    def connectToWifi(self, forceWifiReset):
         ok = False
         print('Connecting to WIFI')
-        wifiStatus = self.wifi.connect()
+        wifiStatus = self.wifi.connect(forceWifiReset)
         self.sock = None
         if (wifiStatus == wifi.WIFI_RECONNECTED):
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
@@ -77,7 +77,7 @@ class MainApp(object):
         return ok
 
     def loop(self):
-        self.connectToWifi() 
+        self.connectToWifi(True) 
         loopPeriodUS = self.loopPeriod * 1000 
         nextSleepWakeTime = time.ticks_add(time.ticks_us(), loopPeriodUS)
         lastCycleStartTime = time.ticks_us()
@@ -85,6 +85,7 @@ class MainApp(object):
         lastCycleExecutionTime = 0
         counterUpdateCount = self.blinkUpdatePeriod / self.loopPeriod
         wifiFailureCounter = 0 
+        packetFailureConsecutiveCounter = 0 
 
         while (True):
             #Compute cycle time and associated statistics
@@ -111,9 +112,18 @@ class MainApp(object):
                     self.ledStatusPin.on()
                 else:
                     self.ledStatusPin.off()
+                packetFailureConsecutiveCounter = 0
             else:
-                print('Failed to send packet. Reconnecting to network')
-                if(not self.connectToWifi()):
+                packetFailureConsecutiveCounter = packetFailureConsecutiveCounter + 1
+                forceWifiReset = (packetFailureConsecutiveCounter == 3)
+                forceMicroReset = (packetFailureConsecutiveCounter == 12)
+                print('Failed to send packet. Reconnecting to network: {0}'.format(packetFailureConsecutiveCounter))
+                if (forceMicroReset):
+                    print('Giving up and rebooting... bye')
+                    packetFailureConsecutiveCounter = 0
+                    machine.reset()
+
+                if(not self.connectToWifi(forceWifiReset)):
                     wifiFailureCounter = wifiFailureCounter + 1
                     print('wifiFailureCounter = {0}'.format(wifiFailureCounter))
                     #Wait before trying again. This looks serious...
@@ -131,7 +141,7 @@ class MainApp(object):
 if __name__ == "__main__":
     UDP_IP = '192.168.0.21'
     #UDP_IP = '239.1.1.5'
-    UDP_PORT = 44443
+    UDP_PORT = 44441
     PERIOD_MS = 100
 
     LED_STATUS_GPIO_PIN = 2

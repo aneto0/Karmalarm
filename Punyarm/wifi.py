@@ -39,7 +39,7 @@ class WIFIManager(object):
         if (ledStatusPin >= 0):
             self.ledStatusPin = machine.Signal(machine.Pin(ledStatusPin, machine.Pin.OUT), invert = ledStatusPinInverted)
 
-    def connect(self):
+    def connect(self, forceWifiReset = True):
         '''
         Args:
             timeout (uint): maximum in milliseconds to wait for a connection
@@ -48,7 +48,10 @@ class WIFIManager(object):
         '''
         sta_if = network.WLAN(network.STA_IF)
         maxWaitTime = time.ticks_add(time.ticks_ms(), self.timeout)
-        if (not sta_if.isconnected()):
+        if (forceWifiReset):
+            self.status = WIFI_DISCONNECTED
+            sta_if.disconnect()
+        elif (not sta_if.isconnected()):
             self.status = WIFI_DISCONNECTED
 
         if (self.status == WIFI_DISCONNECTED):
