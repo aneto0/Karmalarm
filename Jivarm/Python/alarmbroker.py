@@ -224,22 +224,24 @@ class BrokerTCPHandler(socketserver.BaseRequestHandler):
             logger.debug('json is valid: {0}'.format(jsonFrame))
             triggeredAlarmStatus = {}
             alarmsToTrigger = []
-            alarmGAMSignals = jsonFrame['GAMAlarmTrigger']['InputSignals']
-            for t in alarmGAMSignals:
-                if (t in latchedAlarmStatus):
-                    triggeredAlarmStatus[t] = int(alarmGAMSignals[t])
-                else:
-                    logger.critical('Signal {0} is not defined'.format(t))
-            for t in triggeredAlarmStatus:
-                if (triggeredAlarmStatus[t] == 1):
-                    if (triggeredAlarmStatus[t] != latchedAlarmStatus[t]):
-                        for alarmHandler in alarmHandlers[t]:
-                            if (alarmHandler not in alarmsToTrigger):
-                                alarmsToTrigger.append(alarmHandler)
-                        latchedAlarmStatus[t] = triggeredAlarmStatus[t]
-            for a in alarmsToTrigger:
-                logger.debug('Triggering alarm {0}'.format(a))
-                a.trigger(json.dumps(jsonFrame, indent=4, sort_keys=True), logging.CRITICAL)
+            alarmGAMs = ['GAMAlarmTriggerWatchdogPIR', 'GAMAlarmTriggerUltrasonic']
+            for alarmGAMName in alarmGAMs:
+                alarmGAMSignals = jsonFrame[alarmGAMName]['InputSignals']
+                for t in alarmGAMSignals:
+                    if (t in latchedAlarmStatus):
+                        triggeredAlarmStatus[t] = int(alarmGAMSignals[t])
+                    else:
+                        logger.critical('Signal {0} is not defined'.format(t))
+                for t in triggeredAlarmStatus:
+                    if (triggeredAlarmStatus[t] == 1):
+                        if (triggeredAlarmStatus[t] != latchedAlarmStatus[t]):
+                            for alarmHandler in alarmHandlers[t]:
+                                if (alarmHandler not in alarmsToTrigger):
+                                    alarmsToTrigger.append(alarmHandler)
+                            latchedAlarmStatus[t] = triggeredAlarmStatus[t]
+                for a in alarmsToTrigger:
+                    logger.debug('Triggering alarm {0}'.format(a))
+                    a.trigger(json.dumps(jsonFrame, indent=4, sort_keys=True), logging.CRITICAL)
         except Exception as e:
             logger.critical('Received an invalid json: {0}'.format(e))
 
@@ -255,7 +257,7 @@ def resetAlarmStatus(prefix = 'P'):
 
 #... ugly... todo clean
 def initGlobal(defaultAlarmTypes):
-    punyPrefix = 'Punyarm{0}AlarmTriggers.{1}'
+    punyPrefix = 'Punyarm{0}{1}Trigger'
     for i in range(1, 4):
         for at in ['Watchdog', 'PIR', 'Ultrasonic']:
             punyPrefixId = punyPrefix.format(i, at)
